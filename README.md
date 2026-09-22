@@ -1,6 +1,6 @@
 # RoboMaster 算法组第二周任务
 
-本仓库包含 ROS 2 C++ 信号滤波、直流电机机械模型仿真和 PID 转速闭环控制，并使用 Docker Compose 为三个任务提供相互独立的运行环境。
+本仓库包含 ROS 2 C++ 信号滤波、直流电机机械模型仿真、PID 转速闭环控制和双环 PID 角度控制，并使用 Docker Compose 提供相互独立的运行环境。
 
 ## 项目结构
 
@@ -12,8 +12,10 @@
 │   └── src/task1_filters/
 ├── test2_ws/
 │   └── src/task2_motor/
-└── test3_ws/
-    └── src/task3_pid/
+├── test3_ws/
+│   └── src/task3_pid/
+└── test3_advanced_ws/
+    └── src/task3_dual_pid/
 ```
 
 ## 环境
@@ -35,6 +37,7 @@ docker compose up -d --build
 | 任务1 | `task1` | `robomaster-week2-task1` | 21 |
 | 任务2 | `task2` | `robomaster-week2-task2` | 22 |
 | 任务3 | `task3` | `robomaster-week2-task3` | 23 |
+| 任务3进阶 | `task3_advanced` | `robomaster-week2-task3-advanced` | 24 |
 
 ## 任务1：信号滤波
 
@@ -196,6 +199,56 @@ ros2 launch foxglove_bridge foxglove_bridge_launch.xml
 ```
 
 宿主机通过 `ws://localhost:8767` 连接，并绘制 `/motor/torque_cmd`、`/motor/angular_velocity` 和 `/motor/angle`，即可观察电机输入与输出数据。
+
+## 任务3进阶：双环 PID 角度控制
+
+进阶任务将角度环和速度环拆成两个 ROS 2 节点：
+
+```text
+目标角度 ──> angle_controller ──> 目标速度 ──> speed_controller ──> 控制力矩
+                  ↑                                  ↑
+                  │                                  │
+               实际角度                           实际速度
+                  └────────── motor_simulator ───────┘
+```
+
+`angle_controller` 是外环，订阅 `/motor/angle` 并发布 `/motor/velocity_cmd`；`speed_controller` 是内环，订阅目标速度和实际速度并发布 `/motor/torque_cmd`。
+
+当前参数：
+
+| 控制环 | `Kp` | `Ki` | `Kd` |
+|---|---:|---:|---:|
+| 角度外环 | 1.0 | 0.0 | 0.0 |
+| 速度内环 | 0.2 | 0.5 | 0.0 |
+
+目标角度为 `1.5π rad`，目标速度限制为 `±4 rad/s`。从 `0 rad` 出发时，控制器选择 `+4.712 rad` 的优弧，而不是 `-1.571 rad` 的劣弧，最终稳定在约 `4.712 rad`。
+
+构建并运行：
+
+```bash
+docker compose exec task3_advanced bash
+cd /workspace/test3_advanced_ws
+source /opt/ros/jazzy/setup.bash
+colcon build --symlink-install
+source install/setup.bash
+ros2 launch task3_dual_pid dual_pid.launch.py
+```
+
+使用 Foxglove 可视化时，在另一个终端进入 `task3_advanced` 容器并运行：
+
+```bash
+source /opt/ros/jazzy/setup.bash
+ros2 launch foxglove_bridge foxglove_bridge_launch.xml
+```
+
+宿主机使用 `ws://localhost:8768` 连接，可绘制以下数据：
+
+```text
+/motor/angle.data
+/motor/angular_velocity.data
+/motor/velocity_cmd.data
+/motor/torque_cmd.data
+```
 
 ## 许可证
 
