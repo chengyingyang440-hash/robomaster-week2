@@ -30,3 +30,18 @@ services:
     stdin_open: true
     tty: true
     command: ["sleep", "infinity"]
+
+  task3:
+    build: .
+    image: robomaster-week2:jazzy
+    container_name: robomaster-week2-task3
+    working_dir: /workspace/test3_ws
+    volumes:
+      - ./test3_ws:/workspace/test3_ws
+    environment:
+      ROS_DOMAIN_ID: "23"
+    ports:
+      - "8767:8765"
+    stdin_open: true
+    tty: true
+    command: ["sleep", "infinity"]
