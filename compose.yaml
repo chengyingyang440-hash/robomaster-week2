@@ -1,0 +1,32 @@
+name: robomaster-week2
+
+services:
+  task1:
+    build: .
+    image: robomaster-week2:jazzy
+    container_name: robomaster-week2-task1
+    working_dir: /workspace/test1_ws
+    volumes:
+      - ./test1_ws:/workspace/test1_ws
+    environment:
+      ROS_DOMAIN_ID: "21"
+    ports:
+      - "8765:8765"
+    stdin_open: true
+    tty: true
+    command: ["ros2", "launch", "foxglove_bridge", "foxglove_bridge_launch.xml"]
+
+  task2:
+    build: .
+    image: robomaster-week2:jazzy
+    container_name: robomaster-week2-task2
+    working_dir: /workspace/test2_ws
+    volumes:
+      - ./test2_ws:/workspace/test2_ws
+    environment:
+      ROS_DOMAIN_ID: "22"
+    ports:
+      - "8766:8765"
+    stdin_open: true
+    tty: true
+    command: ["sleep", "infinity"]
